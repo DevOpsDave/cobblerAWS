@@ -75,3 +75,21 @@ class SystemAWS(object):
                 return inst_obj
         return False
 
+    def provision_host(self, sys_nm, ami_nm, inst_type='t1.micro',
+            key_name='dbarcelo-omnia',
+            sec_grps=['quick-start-1']):
+
+        if self.get_sys_by_name(sys_nm, state='Running') is False:
+            self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
+
+    def decomision_host(self, sys_nm):
+
+        inst = self.get_sys_by_name(sys_nm)
+        if inst is not None and str(inst.state) == 'stopped':
+            self._terminate_instances([inst.id])
+
+
+
+
+
+
