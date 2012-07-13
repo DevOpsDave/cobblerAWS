@@ -67,7 +67,7 @@ class SystemAWS(object):
             instances += instobj_list
         return instances
 
-    def return_sys_instance_obj(self, system_name, state=None):
+    def get_sys_by_name(self, system_name, state=None):
         inst_objs = self.get_instance_objs(state=None)
         for inst_obj in inst_objs:
             tags = inst_obj.tags
