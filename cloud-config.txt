@@ -1,0 +1,31 @@
+#cloud-config
+repo_additions:
+ - source: "puppetlabs-products"
+   filename: puppetlabs-products.repo
+   enabled: 1
+   gpgcheck: 0
+   baseurl: http://yum.puppetlabs.com/el/6/products/$basearch
+ - source: "puppetlabs-deps"
+   filename: puppetlabs-deps.repo
+   enabled: 1
+   gpgcheck: 0
+   baseurl: http://yum.puppetlabs.com/el/6/dependencies/$basearch
+   enabled: 1
+   gpgcheck: 0
+   priority: 1
+
+runcmd: 
+ - [sh, -c, 'sysctl -w kernel.hostname=$sys_nm']
+ - [sh, -c, "sed -i -e 's/enabled = 1/enabled = 0/' /etc/yum/pluginconf.d/priorities.conf"]
+ - [sh, -c, "echo 10.80.242.101 devms02.us-east-1.emodb.bazaarvoice.com >> /etc/hosts"]
+ - [sh, -c, "yum -y install puppet-2.7.18-1.el6.noarch"]
+ - [sh, -c, "sed -i -e '/agent/i pluginsync=true' /etc/puppet/puppet.conf"]
+ - [sh, -c, "echo '    ca_server = devms02.us-east-1.emodb.bazaarvoice.com' >> /etc/puppet/puppet.conf"] 
+ - [sh, -c, "echo '    server = devms02.us-east-1.emodb.bazaarvoice.com' >> /etc/puppet/puppet.conf"] 
+ - [sh, -c, "mkdir -p /etc/facter/facts.d"]
+ - [sh, -c, "echo tag_Name=$sys_nm >> /etc/facter/facts.d/tags.txt"]
+ - [sh, -c, "echo tag_puppet_server=devms02.us-east-1.emodb.bazaarvoice.com >> /etc/facter/facts.d/tags.txt"]
+ - [sh, -c, "echo tag_caserver=devms02.us-east-1.emodb.bazaarvoice.com >> /etc/facter/facts.d/tags.txt"]
+ - [sh, -c, "echo tag_role=emoapp_node >> /etc/facter/facts.d/tags.txt"]
+ - [sh, -c, "echo role=emoapp_node >> /etc/facter/facts.d/tags.txt"]
+ - [sh, -c, "echo team=emo >> /etc/facter/facts.d/tags.txt"]

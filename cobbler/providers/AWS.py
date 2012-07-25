@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import boto
 import boto.ec2
+from string import Template
 
 
 class ConnectEC2(object):
@@ -28,9 +29,10 @@ class SystemAWS(object):
     """
     Private
     """
-    def __init__(self):
+    def __init__(self, user_data='/root/work/cobblerAWS/cloud-config.txt'):
         inst = ConnectEC2()
         self.conn = inst.conn
+        self.user_data = open(user_data).read()
 
     def _return_instance_objs(self, reservation_obj):
         return reservation_obj.instances
@@ -39,14 +41,10 @@ class SystemAWS(object):
         return [inst_obj.id for inst_obj in instance_objs]
 
     def _run_sys(self, sys_nm, ami_nm, key_nm, inst_type, sec_grps):
-        udat = "#!/bin/sh\n"
-        udat += "#echo 'kernel.hostname = %s' >> /etc/sysctl.conf\n" % (sys_nm)
-        udat += "sysctl -w kernel.hostname=%s\n" % (sys_nm)
-        udat += "sysctl -p\n"
-        udat += "echo 'it ran' > /root/yo.txt"
+        user_data = Template(self.user_data).safe_substitute(sys_nm=sys_nm)
         reservation = self.conn.run_instances(ami_nm, key_name=key_nm,
                 instance_type=inst_type, security_groups=sec_grps,
-                user_data=udat)
+                user_data=user_data)
         reservation.instances[0].add_tag('Name', sys_nm)
         return reservation
 
@@ -79,17 +77,17 @@ class SystemAWS(object):
             key_name='dbarcelo-omnia',
             sec_grps=['quick-start-1']):
 
-        if self.get_sys_by_name(sys_nm, state='Running') is False:
-            self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
+        inst = self.get_sys_by_name(sys_nm, state='Running')
+        if inst is False or inst.state != 'running':
+            new_host = self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
+            return new_host
+        else:
+            return False
 
     def decomision_host(self, sys_nm):
-
         inst = self.get_sys_by_name(sys_nm)
-        if inst is not None and str(inst.state) == 'stopped':
+        if inst is not None and str(inst.state) != 'running':
             self._terminate_instances([inst.id])
-
-
-
-
-
+        else:
+            return False
 
