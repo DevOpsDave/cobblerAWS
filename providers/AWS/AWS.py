@@ -49,7 +49,7 @@ class SystemAWS(object):
         reservation.instances[0].add_tag('Name', sys_nm)
         return reservation
 
-	def check_for_cert_by_sys_nm(self, sys_nm):
+	def _check_for_cert_by_sys_nm(self, sys_nm):
 		headers = {'Accept': 'pson'}
 		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
 		s = requests.session()
@@ -58,7 +58,7 @@ class SystemAWS(object):
 			return False
 		return True
 
-	def delete_cert_by_sys_nm(self, sys_nm):
+	def _delete_cert_by_sys_nm(self, sys_nm):
 		headers = {'Accept': 'pson'}
 		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
 		s = requests.session()
