@@ -2,6 +2,7 @@
 import boto
 import boto.ec2
 from string import Template
+import requests
 
 
 class ConnectEC2(object):
@@ -25,14 +26,13 @@ class ConnectEC2(object):
 
 
 class SystemAWS(object):
-
     """
     Private
     """
-    def __init__(self, user_data='/root/work/cobblerAWS/cloud-config.txt'):
+    def __init__(self, user_data='/etc/puppet/mod_scripts/production/cobbler/cloud-config.yaml'):
         inst = ConnectEC2()
         self.conn = inst.conn
-        self.user_data = open(user_data).read()
+        self.user_data = user_data
 
     def _return_instance_objs(self, reservation_obj):
         return reservation_obj.instances
@@ -41,12 +41,31 @@ class SystemAWS(object):
         return [inst_obj.id for inst_obj in instance_objs]
 
     def _run_sys(self, sys_nm, ami_nm, key_nm, inst_type, sec_grps):
-        user_data = Template(self.user_data).safe_substitute(sys_nm=sys_nm)
+        udat = open(self.user_data).read()
+        user_data = Template(udat).safe_substitute(sys_nm=sys_nm)
         reservation = self.conn.run_instances(ami_nm, key_name=key_nm,
-                instance_type=inst_type, security_groups=sec_grps,
-                user_data=user_data)
+				instance_type=inst_type, security_groups=sec_grps,
+				user_data=user_data)
         reservation.instances[0].add_tag('Name', sys_nm)
         return reservation
+
+	def check_for_cert_by_sys_nm(self, sys_nm):
+		headers = {'Accept': 'pson'}
+		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+		s = requests.session()
+		r = s.get(url, verify=False, headers=headers)
+		if r.status_code == '404':
+			return False
+		return True
+
+	def delete_cert_by_sys_nm(self, sys_nm):
+		headers = {'Accept': 'pson'}
+		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+		s = requests.session()
+		r = s.delete(url, verify=False, headers=headers)
+		if r.status_code == '404':
+			return False
+		return True
 
     def _terminate_instances(self, instance_id_list):
         self.conn.terminate_instances(instance_ids=instance_id_list)
@@ -76,10 +95,10 @@ class SystemAWS(object):
     def provision_host(self, sys_nm, ami_nm, inst_type='t1.micro',
             key_name='dbarcelo-omnia',
             sec_grps=['quick-start-1']):
-
         inst = self.get_sys_by_name(sys_nm, state='Running')
         if inst is False or inst.state != 'running':
             new_host = self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
+            self._delete_cert_by_name(sys_nm)
             return new_host
         else:
             return False
