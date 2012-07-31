@@ -47,25 +47,25 @@ class SystemAWS(object):
 				instance_type=inst_type, security_groups=sec_grps,
 				user_data=user_data)
         reservation.instances[0].add_tag('Name', sys_nm)
-        return reservation
+        return reservation 
+	
+    def _check_for_cert_by_sys_nm(self, sys_nm):
+        headers = {'Accept': 'pson'}
+        url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+        s = requests.session()
+        r = s.get(url, verify=False, headers=headers)
+        if r.status_code == 404:
+            return False
+        return True
 
-	def _check_for_cert_by_sys_nm(self, sys_nm):
-		headers = {'Accept': 'pson'}
-		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
-		s = requests.session()
-		r = s.get(url, verify=False, headers=headers)
-		if r.status_code == '404':
-			return False
-		return True
-
-	def _delete_cert_by_sys_nm(self, sys_nm):
-		headers = {'Accept': 'pson'}
-		url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
-		s = requests.session()
-		r = s.delete(url, verify=False, headers=headers)
-		if r.status_code == '404':
-			return False
-		return True
+    def _delete_cert_by_sys_nm(self, sys_nm):
+        headers = {'Accept': 'pson'}
+        url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+        s = requests.session()
+        r = s.delete(url, verify=False, headers=headers)
+        if r.status_code == 404:
+            return False
+        return True
 
     def _terminate_instances(self, instance_id_list):
         self.conn.terminate_instances(instance_ids=instance_id_list)
@@ -98,7 +98,7 @@ class SystemAWS(object):
         inst = self.get_sys_by_name(sys_nm, state='Running')
         if inst is False or inst.state != 'running':
             new_host = self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
-            self._delete_cert_by_name(sys_nm)
+            self._delete_cert_by_sys_nm(sys_nm)
             return new_host
         else:
             return False
