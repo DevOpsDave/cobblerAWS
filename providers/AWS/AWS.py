@@ -29,7 +29,10 @@ class SystemAWS(object):
     """
     Private
     """
-    def __init__(self, user_data='/etc/puppet/mod_scripts/production/cobbler/cloud-config.yaml'):
+    def __init__(self,
+            user_data='/etc/puppet/mod_scripts/production/cobbler/cloud-config.yaml',
+            default_ami='ami-aecd60c7',
+            default_sec_grp = 'app'):
         inst = ConnectEC2()
         self.conn = inst.conn
         self.user_data = user_data
@@ -44,14 +47,15 @@ class SystemAWS(object):
         udat = open(self.user_data).read()
         user_data = Template(udat).safe_substitute(sys_nm=sys_nm)
         reservation = self.conn.run_instances(ami_nm, key_name=key_nm,
-				instance_type=inst_type, security_groups=sec_grps,
-				user_data=user_data)
+                instance_type=inst_type, security_groups=sec_grps,
+                user_data=user_data)
         reservation.instances[0].add_tag('Name', sys_nm)
-        return reservation 
-	
+        return reservation
+
+
     def _check_for_cert_by_sys_nm(self, sys_nm):
         headers = {'Accept': 'pson'}
-        url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+        url = "https://localhost:8140/production/certificate_status/%s" % (sys_nm)
         s = requests.session()
         r = s.get(url, verify=False, headers=headers)
         if r.status_code == 404:
@@ -60,7 +64,7 @@ class SystemAWS(object):
 
     def _delete_cert_by_sys_nm(self, sys_nm):
         headers = {'Accept': 'pson'}
-        url = "https://devms02.us-east-1.emodb.bazaarvoice.com:8140/production/certificate_status/%s" % (sys_nm)
+        url = "https://localhost:8140/production/certificate_status/%s" % (sys_nm)
         s = requests.session()
         r = s.delete(url, verify=False, headers=headers)
         if r.status_code == 404:
@@ -92,9 +96,9 @@ class SystemAWS(object):
                 return inst_obj
         return False
 
-    def provision_host(self, sys_nm, ami_nm, inst_type='t1.micro',
+    def provision_host(self, sys_nm, ami_nm='ami-aecd60c7', inst_type='m1.medium',
             key_name='dbarcelo-omnia',
-            sec_grps=['quick-start-1']):
+            sec_grps=['app']):
         inst = self.get_sys_by_name(sys_nm, state='Running')
         if inst is False or inst.state != 'running':
             new_host = self._run_sys(sys_nm, ami_nm, key_name, inst_type, sec_grps)
