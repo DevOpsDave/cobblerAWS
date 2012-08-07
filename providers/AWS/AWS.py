@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import boto
 import boto.ec2
+import boto.ec2.autoscale
 from string import Template
 import requests
 
@@ -20,6 +21,26 @@ class ConnectEC2(object):
             return conn
         else:
             conn = boto.ec2.connect_to_region(self.region,
+                    aws_access_key_id=self.creds['key_id'],
+                    aws_secret_access_key=self.creds['key_secret'])
+            return conn
+
+
+class ConnectAutoscale(object):
+
+    def __init__(self, region='us-east-1', aws_access_key_id=None,
+            aws_secret_access_key=None):
+        self.region = region
+        self.creds = {'key_id': aws_access_key_id,
+                'key_secret': aws_secret_access_key}
+        self.conn = self._connect_()
+
+    def _connect_(self):
+        if (self.creds['key_id'] or self.creds['key_secret']) is None:
+            conn = boto.ec2.autoscale.connect_to_region(self.region)
+            return conn
+        else:
+            conn = boto.ec2.autoscale.connect_to_region(self.region,
                     aws_access_key_id=self.creds['key_id'],
                     aws_secret_access_key=self.creds['key_secret'])
             return conn
